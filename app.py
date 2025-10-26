@@ -20,8 +20,9 @@ st.set_page_config(page_title="Free SEO Meta Generator", page_icon="⚙️", lay
 st.title("⚙️ SEO Meta Title & Description Generator (Free, No API)")
 st.markdown(
     """
-This free tool automatically generates SEO meta titles (50–60 chars) and meta descriptions (150–160 chars)
-based on your uploaded data. It works **offline**, with **no OpenAI API** or paid services.
+This free tool automatically generates SEO meta titles (**50–60 chars**) and descriptions (**150–160 chars**)
+based on your uploaded data.  
+It works **offline**, with **no API keys or paid services**.  
 """
 )
 
@@ -43,16 +44,22 @@ def detect_intent(title, desc):
         return "generic"
 
 # =========================================
-# 🧠 META GENERATION
+# 🧠 STRICT RANGE TRUNCATION + GENERATION
 # =========================================
 
-def truncate_to_range(text, min_len, max_len):
+def strict_length(text, min_len, max_len):
+    """Ensure text strictly fits within the character range."""
     text = text.strip()
+    # Hard cut if over limit
     if len(text) > max_len:
-        text = text[:max_len].rstrip(".!,;:- ") + "..."
-    elif len(text) < min_len:
-        text = (text + " " + text[:min_len])[:min_len]
-    return text
+        text = text[:max_len].rstrip(" .,!;:-")
+    # If too short, pad with generic filler words
+    while len(text) < min_len:
+        text += " more"
+        if len(text) > max_len:
+            text = text[:max_len].rstrip(" .,!;:-")
+            break
+    return text.strip()
 
 def generate_title(intent, title1, primary_kw, secondary_kw):
     t = {
@@ -83,7 +90,8 @@ def generate_title(intent, title1, primary_kw, secondary_kw):
         ],
     }
     title = random.choice(t.get(intent, t["generic"]))
-    return truncate_to_range(title, TITLE_MIN, TITLE_MAX)
+    title = strict_length(title, TITLE_MIN, TITLE_MAX)
+    return title
 
 def generate_description(intent, title1, primary_kw, secondary_kw, tertiary_kw, existing_desc):
     d = {
@@ -109,7 +117,8 @@ def generate_description(intent, title1, primary_kw, secondary_kw, tertiary_kw, 
         ],
     }
     desc = random.choice(d.get(intent, d["generic"]))
-    return truncate_to_range(desc, DESC_MIN, DESC_MAX)
+    desc = strict_length(desc, DESC_MIN, DESC_MAX)
+    return desc
 
 # =========================================
 # 📂 FILE UPLOAD
@@ -135,7 +144,6 @@ if uploaded:
     if st.button("🚀 Generate Meta Titles & Descriptions"):
         st.info("Generating meta titles and descriptions...")
 
-        # ✅ FIXED: Correct variable unpacking
         generated_titles, generated_descriptions, intents, titles, descs = set(), set(), [], [], []
 
         for _, row in df.iterrows():
@@ -166,9 +174,32 @@ if uploaded:
         df["Title Char Count"] = df["Generated Meta Title"].apply(len)
         df["Description Char Count"] = df["Generated Meta Description"].apply(len)
 
+        # =========================================
+        # 🎨 HIGHLIGHT OVER/UNDER LENGTH VALUES
+        # =========================================
+        def highlight_length(val, min_len, max_len):
+            if val < min_len:
+                color = "background-color: #fff3cd"  # Yellow - too short
+            elif val > max_len:
+                color = "background-color: #f8d7da"  # Red - too long
+            else:
+                color = "background-color: #d4edda"  # Green - perfect
+            return color
+
+        styled_df = df[[
+            "Detected Intent",
+            "Generated Meta Title",
+            "Title Char Count",
+            "Generated Meta Description",
+            "Description Char Count"
+        ]].style.applymap(lambda v: highlight_length(v, TITLE_MIN, TITLE_MAX) if isinstance(v, int) and v < 200 else "",
+                          subset=["Title Char Count"]) \
+          .applymap(lambda v: highlight_length(v, DESC_MIN, DESC_MAX) if isinstance(v, int) and v < 300 else "",
+                    subset=["Description Char Count"])
+
         st.success("✅ Meta titles and descriptions generated successfully!")
-        st.markdown("### 🔍 Preview of Results")
-        st.dataframe(df[["Detected Intent", "Generated Meta Title", "Title Char Count", "Generated Meta Description", "Description Char Count"]].head(10))
+        st.markdown("### 🔍 Preview of Results (Color-coded by length)")
+        st.dataframe(styled_df, use_container_width=True)
 
         # Download processed file
         towrite = BytesIO()
