@@ -1,129 +1,113 @@
-# =========================================
-# ⚙️ SEO Meta Title & Description Generator
-# Streamlit App (Free, No API Keys)
-# =========================================
-
 import streamlit as st
 import pandas as pd
-import random
-import re
 from io import BytesIO
 
 # =========================================
-# ⚙️ CONFIGURATION
+# CONFIGURATION
 # =========================================
-
 TITLE_MIN, TITLE_MAX = 50, 60
 DESC_MIN, DESC_MAX = 150, 160
 
 st.set_page_config(page_title="SEO Meta Generator", page_icon="⚙️", layout="wide")
-st.title("⚙️ SEO Meta Title & Description Generator (Professional, No API)")
+st.title("⚙️ Professional SEO Meta Generator with Tone Selection")
 st.markdown(
     """
-This free tool creates **professional**, **complete** SEO meta titles (50–60 chars)  
-and descriptions (150–160 chars) based on your uploaded data — no API key required.
+Generate professional **meta titles** (50–60 chars) and **meta descriptions** (150–160 chars)  
+that are complete sentences and **adapt to your chosen tone**. No API key required.
 """
 )
 
 # =========================================
-# 🔍 INTENT DETECTION
+# TONE SELECTION
 # =========================================
+tone = st.selectbox(
+    "Select Tone for Meta Data",
+    options=["Professional", "Friendly", "Persuasive", "Educational"]
+)
 
+# =========================================
+# INTENT DETECTION
+# =========================================
 def detect_intent(title, desc):
     text = f"{title} {desc}".lower()
-    if re.search(r"\b(buy|shop|price|model|deal|feature|specs?)\b", text):
+    if any(k in text for k in ["buy","shop","price","model","deal","feature","specs"]):
         return "product"
-    elif re.search(r"\b(service|consult|solution|support|agency|expert)\b", text):
+    elif any(k in text for k in ["service","consult","solution","support","agency","expert"]):
         return "service"
-    elif re.search(r"\b(how to|guide|tips|news|insight|learn|blog)\b", text):
+    elif any(k in text for k in ["how to","guide","tips","news","insight","learn","blog"]):
         return "blog"
-    elif re.search(r"\b(collection|list|types?|best|compare|category)\b", text):
+    elif any(k in text for k in ["collection","list","type","best","compare","category"]):
         return "category"
     else:
         return "generic"
 
 # =========================================
-# ✍️ NATURAL TEMPLATE-BASED GENERATION
+# TONE-BASED CONNECTORS
 # =========================================
-
-def within_range(text, min_len, max_len):
-    return min_len <= len(text) <= max_len
-
-def generate_title(intent, title1, primary_kw, secondary_kw):
-    templates = {
-        "product": [
-            f"Buy {title1} | {primary_kw} Details & Pricing",
-            f"{primary_kw} – {title1} with Latest Features",
-            f"{title1}: Premium {primary_kw} for Every Need",
-            f"{title1} – Explore Top {primary_kw} Options"
-        ],
-        "service": [
-            f"{title1} | Professional {primary_kw} Services",
-            f"Trusted {primary_kw} Solutions – {title1}",
-            f"{title1} – Expert {primary_kw} Support",
-            f"Reliable {primary_kw} & {secondary_kw} by {title1}"
-        ],
-        "blog": [
-            f"{title1} – {primary_kw} Insights & Expert Tips",
-            f"{primary_kw} Guide: {title1}",
-            f"Learn {primary_kw} Strategies with {title1}",
-            f"{title1}: Explore {primary_kw} & {secondary_kw}"
-        ],
-        "category": [
-            f"Best {primary_kw} {title1} – Compare Top Choices",
-            f"{title1}: Explore Leading {primary_kw} Options",
-            f"Top {primary_kw} {title1} for Smart Selection",
-            f"{primary_kw} {title1} | Discover What Fits You"
-        ],
-        "generic": [
-            f"{title1} | {primary_kw} Insights & Information",
-            f"Discover {primary_kw} at {title1}",
-            f"{primary_kw} – Learn More with {title1}",
-            f"{title1}: Everything About {primary_kw}"
-        ],
-    }
-
-    for _ in range(10):  # try multiple templates until one fits range
-        title = random.choice(templates.get(intent, templates["generic"]))
-        if within_range(title, TITLE_MIN, TITLE_MAX):
-            return title
-    return random.choice(templates.get(intent, templates["generic"]))[:TITLE_MAX]
-
-def generate_description(intent, title1, primary_kw, secondary_kw, tertiary_kw, existing_desc):
-    templates = {
-        "product": [
-            f"Discover {title1}, a premium {primary_kw} offering the best in performance and value. Compare {secondary_kw} and {tertiary_kw} to find your perfect match today.",
-            f"Explore {title1}, designed for those who want the finest {primary_kw}. Compare {secondary_kw} and {tertiary_kw} for a smarter buying choice."
-        ],
-        "service": [
-            f"At {title1}, we provide professional {primary_kw} services that deliver real results. Our experts offer tailored {secondary_kw} and {tertiary_kw} solutions for every client.",
-            f"Experience reliable {primary_kw} solutions from {title1}. We help you with {secondary_kw} and {tertiary_kw} support designed for lasting success."
-        ],
-        "blog": [
-            f"Read {title1} to explore expert insights on {primary_kw}. Learn about {secondary_kw} and {tertiary_kw} strategies to stay informed and ahead of the competition.",
-            f"{title1} covers essential {primary_kw} knowledge with practical {secondary_kw} and {tertiary_kw} tips for professionals and learners alike."
-        ],
-        "category": [
-            f"Browse the best {primary_kw} in {title1}. Compare {secondary_kw} and {tertiary_kw} options to find products that meet your exact requirements with ease.",
-            f"Explore {title1} – a curated range of {primary_kw}. Compare {secondary_kw} and {tertiary_kw} to discover the right fit for your needs."
-        ],
-        "generic": [
-            f"{title1} provides detailed information about {primary_kw}. Explore {secondary_kw} and {tertiary_kw} insights that help you make smarter decisions.",
-            f"Learn everything about {primary_kw} with {title1}. Discover {secondary_kw} and {tertiary_kw} to expand your knowledge today."
-        ],
-    }
-
-    for _ in range(10):
-        desc = random.choice(templates.get(intent, templates["generic"]))
-        if within_range(desc, DESC_MIN, DESC_MAX):
-            return desc
-    return random.choice(templates.get(intent, templates["generic"]))[:DESC_MAX]
+def tone_connectors(tone):
+    if tone == "Professional":
+        return {"start": "Discover", "join": "|", "suffix": "Learn More"}
+    elif tone == "Friendly":
+        return {"start": "Check out", "join": "-", "suffix": "Find out more!"}
+    elif tone == "Persuasive":
+        return {"start": "Get", "join": "|", "suffix": "Act Now!"}
+    elif tone == "Educational":
+        return {"start": "Learn about", "join": "-", "suffix": "Detailed Insights"}
+    else:
+        return {"start": "Discover", "join": "|", "suffix": "Learn More"}
 
 # =========================================
-# 📂 FILE UPLOAD + PROCESSING
+# COMPLETE TITLE GENERATION
 # =========================================
+def generate_title_with_tone(title1, primary_kw, secondary_kw, tone):
+    connectors = tone_connectors(tone)
+    pieces = [f"{connectors['start']} {title1}", primary_kw, secondary_kw]
+    title = ""
+    for p in pieces:
+        if not p:
+            continue
+        if len(title + " " + p) <= TITLE_MAX:
+            title = (title + " " + p).strip()
+        else:
+            break
+    # Ensure minimum length
+    while len(title) < TITLE_MIN:
+        suffix = f" {connectors['suffix']}"
+        if len(title + suffix) <= TITLE_MAX:
+            title += suffix
+        else:
+            break
+    return title
 
-uploaded = st.file_uploader("📤 Upload your SEO data file (CSV or Excel)", type=["csv", "xlsx"])
+# =========================================
+# COMPLETE DESCRIPTION GENERATION
+# =========================================
+def generate_description_with_tone(title1, primary_kw, secondary_kw, tertiary_kw, tone):
+    connectors = tone_connectors(tone)
+    base = f"{title1} provides comprehensive information about {primary_kw}"
+    extras = ""
+    if secondary_kw:
+        extras += f", including {secondary_kw}"
+    if tertiary_kw:
+        extras += f" and {tertiary_kw}"
+    extras += f". {connectors['suffix']}."
+    desc = f"{connectors['start']} {base}{extras}"
+    # Ensure min length
+    while len(desc) < DESC_MIN:
+        extra_suffix = " More details available."
+        if len(desc + extra_suffix) <= DESC_MAX:
+            desc += extra_suffix
+        else:
+            break
+    # Final safety cut
+    if len(desc) > DESC_MAX:
+        desc = desc[:DESC_MAX].rstrip()
+    return desc
+
+# =========================================
+# FILE UPLOAD
+# =========================================
+uploaded = st.file_uploader("Upload your SEO CSV/Excel file", type=["csv","xlsx"])
 
 if uploaded:
     try:
@@ -132,46 +116,38 @@ if uploaded:
         else:
             df = pd.read_excel(uploaded)
     except Exception as e:
-        st.error(f"❌ Error reading file: {e}")
+        st.error(f"Error reading file: {e}")
         st.stop()
 
-    st.success(f"✅ File uploaded successfully! {len(df)} rows loaded.")
+    st.success(f"Loaded {len(df)} rows successfully!")
     st.dataframe(df.head())
 
-    if st.button("🚀 Generate Professional Meta Data"):
-        st.info("Generating professional meta titles and descriptions...")
-
-        generated_titles, generated_descriptions, intents, titles, descs = set(), set(), [], [], []
+    if st.button("Generate Meta Titles & Descriptions"):
+        generated_titles, generated_descriptions, intents = [], [], []
 
         for _, row in df.iterrows():
-            title1 = str(row.get("Title 1", "")).strip()
-            existing_desc = str(row.get("Existing Description", "")).strip()
-            primary_kw = str(row.get("Primary KW", "")).strip()
-            secondary_kw = str(row.get("Secondary KW", "")).strip()
-            tertiary_kw = str(row.get("Tertiary KW", "")).strip()
+            title1 = str(row.get("Title 1","")).strip()
+            existing_desc = str(row.get("Existing Description","")).strip()
+            primary_kw = str(row.get("Primary KW","")).strip()
+            secondary_kw = str(row.get("Secondary KW","")).strip()
+            tertiary_kw = str(row.get("Tertiary KW","")).strip()
 
             intent = detect_intent(title1, existing_desc)
-            meta_title = generate_title(intent, title1, primary_kw, secondary_kw)
-            while meta_title in generated_titles:
-                meta_title = generate_title(intent, title1, primary_kw, secondary_kw)
-            generated_titles.add(meta_title)
 
-            meta_desc = generate_description(intent, title1, primary_kw, secondary_kw, tertiary_kw, existing_desc)
-            while meta_desc in generated_descriptions:
-                meta_desc = generate_description(intent, title1, primary_kw, secondary_kw, tertiary_kw, existing_desc)
-            generated_descriptions.add(meta_desc)
+            meta_title = generate_title_with_tone(title1, primary_kw, secondary_kw, tone)
+            meta_desc = generate_description_with_tone(title1, primary_kw, secondary_kw, tertiary_kw, tone)
 
-            titles.append(meta_title)
-            descs.append(meta_desc)
+            generated_titles.append(meta_title)
+            generated_descriptions.append(meta_desc)
             intents.append(intent)
 
         df["Detected Intent"] = intents
-        df["Generated Meta Title"] = titles
-        df["Generated Meta Description"] = descs
+        df["Generated Meta Title"] = generated_titles
+        df["Generated Meta Description"] = generated_descriptions
         df["Title Char Count"] = df["Generated Meta Title"].apply(len)
         df["Description Char Count"] = df["Generated Meta Description"].apply(len)
 
-        # Highlight by length compliance
+        # Color-coded preview
         def color_len(val, min_len, max_len):
             if val < min_len:
                 return "background-color: #fff3cd"  # yellow
@@ -186,24 +162,22 @@ if uploaded:
             "Title Char Count",
             "Generated Meta Description",
             "Description Char Count"
-        ]].style.applymap(lambda v: color_len(v, TITLE_MIN, TITLE_MAX) if isinstance(v, int) else "", subset=["Title Char Count"]) \
-         .applymap(lambda v: color_len(v, DESC_MIN, DESC_MAX) if isinstance(v, int) else "", subset=["Description Char Count"])
+        ]].style.applymap(lambda v: color_len(v, TITLE_MIN, TITLE_MAX) if isinstance(v,int) else "", subset=["Title Char Count"]) \
+         .applymap(lambda v: color_len(v, DESC_MIN, DESC_MAX) if isinstance(v,int) else "", subset=["Description Char Count"])
 
-        st.success("✅ Meta titles and descriptions generated successfully!")
-        st.markdown("### 🔍 Preview (Color-coded by Length)")
+        st.success("✅ Meta data generated successfully!")
+        st.markdown("### Preview (color-coded by length)")
         st.dataframe(styled, use_container_width=True)
 
-        # Download output
+        # Download button
         towrite = BytesIO()
         df.to_excel(towrite, index=False)
         towrite.seek(0)
-
         st.download_button(
-            label="📥 Download Enhanced Excel File",
+            label="Download Enhanced Excel File",
             data=towrite,
-            file_name="output_with_meta.xlsx",
+            file_name="seo_meta_output_with_tone.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
 else:
-    st.info("👆 Upload your SEO CSV/Excel file to get started.")
+    st.info("Upload your SEO CSV or Excel file to get started.")
