@@ -5,15 +5,16 @@ from io import BytesIO
 # =========================================
 # CONFIGURATION
 # =========================================
-TITLE_MIN, TITLE_MAX = 50, 60
-DESC_MIN, DESC_MAX = 150, 160
+# Flexible ranges to ensure completeness
+TITLE_MIN, TITLE_MAX = 50, 70
+DESC_MIN, DESC_MAX = 150, 180
 
 st.set_page_config(page_title="SEO Meta Generator", page_icon="⚙️", layout="wide")
-st.title("⚙️ Professional SEO Meta Generator with Tone Selection")
+st.title("⚙️ Complete-First SEO Meta Generator with Tone Selection")
 st.markdown(
     """
-Generate professional **meta titles** (50–60 chars) and **meta descriptions** (150–160 chars)  
-that are complete sentences and **adapt to your chosen tone**. No API key required.
+Generate professional **meta titles** and **meta descriptions** that are complete, readable, and adapted to your chosen tone.  
+This approach ensures the main content and keywords are never cut off.
 """
 )
 
@@ -57,36 +58,33 @@ def tone_connectors(tone):
         return {"start": "Discover", "suffix": "Learn more"}
 
 # =========================================
-# TITLE GENERATION
+# TITLE GENERATION (COMPLETE-FIRST)
 # =========================================
-def generate_title_with_tone(title1, primary_kw, secondary_kw, tone):
+def generate_complete_title(title1, primary_kw, secondary_kw, tone):
     connectors = tone_connectors(tone)
     pieces = [title1, primary_kw, secondary_kw]
     pieces = [p for p in pieces if p]
     
-    # Join keywords naturally
     title = " | ".join(pieces)
+    title = f"{connectors['start']} {title}"
     
-    # Prepend start phrase if it fits
-    start_phrase = connectors['start']
-    if len(start_phrase + " " + title) <= TITLE_MAX:
-        title = start_phrase + " " + title
-
-    # Add suffix once if still below minimum
-    suffix = connectors['suffix']
-    if len(title) < TITLE_MIN and len(title + " " + suffix) <= TITLE_MAX:
-        title = title + " " + suffix
-
-    # Safety cut if needed
+    # Append suffix only if it fits without cutting main content
+    if len(title + " " + connectors['suffix']) <= TITLE_MAX:
+        title = f"{title} {connectors['suffix']}"
+    
+    # Safety: trim optional last part (suffix or secondary kw) if over max
     if len(title) > TITLE_MAX:
-        title = title[:TITLE_MAX].rstrip()
-
+        if connectors['suffix'] in title:
+            title = title.replace(" " + connectors['suffix'], "")
+        elif secondary_kw and secondary_kw in title:
+            title = title.replace(" | " + secondary_kw, "")
+    
     return title
 
 # =========================================
-# DESCRIPTION GENERATION
+# DESCRIPTION GENERATION (COMPLETE-FIRST)
 # =========================================
-def generate_description_with_tone(title1, primary_kw, secondary_kw, tertiary_kw, tone):
+def generate_complete_description(title1, primary_kw, secondary_kw, tertiary_kw, tone):
     connectors = tone_connectors(tone)
     base = f"{title1} provides comprehensive information about {primary_kw}"
     extras = ""
@@ -97,17 +95,19 @@ def generate_description_with_tone(title1, primary_kw, secondary_kw, tertiary_kw
     extras += f". {connectors['suffix']}."
     
     desc = f"{connectors['start']} {base}{extras}"
-
-    # Ensure minimum length
+    
+    # Optional: add filler only if below min length
     if len(desc) < DESC_MIN:
-        extra_suffix = " More details available."
-        if len(desc + extra_suffix) <= DESC_MAX:
-            desc += extra_suffix
-
-    # Final safety cut
+        filler = " More details available."
+        if len(desc + filler) <= DESC_MAX:
+            desc += filler
+    
+    # Safety: if still above max, remove suffix first
     if len(desc) > DESC_MAX:
-        desc = desc[:DESC_MAX].rstrip()
-
+        desc = desc.replace(f" {connectors['suffix']}.", "")
+        if len(desc) > DESC_MAX:
+            desc = desc[:DESC_MAX].rstrip()
+    
     return desc
 
 # =========================================
@@ -140,8 +140,8 @@ if uploaded:
 
             intent = detect_intent(title1, existing_desc)
 
-            meta_title = generate_title_with_tone(title1, primary_kw, secondary_kw, tone)
-            meta_desc = generate_description_with_tone(title1, primary_kw, secondary_kw, tertiary_kw, tone)
+            meta_title = generate_complete_title(title1, primary_kw, secondary_kw, tone)
+            meta_desc = generate_complete_description(title1, primary_kw, secondary_kw, tertiary_kw, tone)
 
             generated_titles.append(meta_title)
             generated_descriptions.append(meta_desc)
@@ -182,7 +182,7 @@ if uploaded:
         st.download_button(
             label="Download Enhanced Excel File",
             data=towrite,
-            file_name="seo_meta_output_with_tone.xlsx",
+            file_name="seo_meta_output_complete_first.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 else:
