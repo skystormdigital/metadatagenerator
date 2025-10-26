@@ -88,7 +88,7 @@ def generate_description_no_prefix(title1, primary_kw, secondary_kw, tertiary_kw
     # Add optional keywords if fits
     for kw in optional:
         temp_desc = f"{desc}, including {kw}"
-        if len(temp_desc + 1) <= DESC_MAX:  # +1 for suffix space
+        if len(temp_desc + " ") <= DESC_MAX:  # +1 for space before suffix
             desc = temp_desc
 
     # Add tone-based suffix if fits
@@ -180,7 +180,7 @@ if uploaded:
         st.download_button(
             label="Download Enhanced Excel File",
             data=towrite,
-            file_name="seo_meta_output_prefix_free.xlsx",
+            file_name="seo_meta_output_prefix_free_fixed.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 else:
