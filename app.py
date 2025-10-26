@@ -1,5 +1,5 @@
 # =========================================
-# 🧠 SEO Meta Title & Description Generator
+# ⚙️ SEO Meta Title & Description Generator
 # Streamlit App (Free, No API Keys)
 # =========================================
 
@@ -18,7 +18,12 @@ DESC_MIN, DESC_MAX = 150, 160
 
 st.set_page_config(page_title="Free SEO Meta Generator", page_icon="⚙️", layout="wide")
 st.title("⚙️ SEO Meta Title & Description Generator (Free, No API)")
-st.markdown("Generate meta titles (50–60 chars) and descriptions (150–160 chars) automatically — no API key required!")
+st.markdown(
+    """
+This free tool automatically generates SEO meta titles (50–60 chars) and meta descriptions (150–160 chars)
+based on your uploaded data. It works **offline**, with **no OpenAI API** or paid services.
+"""
+)
 
 # =========================================
 # 🔍 INTENT DETECTION
@@ -54,28 +59,28 @@ def generate_title(intent, title1, primary_kw, secondary_kw):
         "product": [
             f"Buy {title1} – {primary_kw} at Best Price",
             f"{title1} | {primary_kw} Features & Specs",
-            f"{primary_kw}: {title1} for You"
+            f"{primary_kw}: {title1} for You",
         ],
         "service": [
             f"{title1} – Expert {primary_kw} Services",
             f"{primary_kw} Solutions | {title1}",
-            f"Professional {primary_kw} by {title1}"
+            f"Professional {primary_kw} by {title1}",
         ],
         "blog": [
             f"{title1} – {primary_kw} Guide & Tips",
             f"{primary_kw} Insights: {title1}",
-            f"{title1} | Learn About {primary_kw}"
+            f"{title1} | Learn About {primary_kw}",
         ],
         "category": [
             f"Best {primary_kw} {title1} | Compare & Choose",
             f"{title1} – Top {primary_kw} Options",
-            f"{primary_kw} {title1} Collection"
+            f"{primary_kw} {title1} Collection",
         ],
         "generic": [
             f"{title1} | {primary_kw}",
             f"Discover {title1} – {primary_kw}",
-            f"{primary_kw} – {title1}"
-        ]
+            f"{primary_kw} – {title1}",
+        ],
     }
     title = random.choice(t.get(intent, t["generic"]))
     return truncate_to_range(title, TITLE_MIN, TITLE_MAX)
@@ -101,7 +106,7 @@ def generate_description(intent, title1, primary_kw, secondary_kw, tertiary_kw, 
         "generic": [
             f"{title1} – your trusted source for {primary_kw}. Explore {secondary_kw} and {tertiary_kw} today.",
             f"Find {primary_kw} information at {title1}. Learn about {secondary_kw} and {tertiary_kw}.",
-        ]
+        ],
     }
     desc = random.choice(d.get(intent, d["generic"]))
     return truncate_to_range(desc, DESC_MIN, DESC_MAX)
@@ -110,10 +115,10 @@ def generate_description(intent, title1, primary_kw, secondary_kw, tertiary_kw, 
 # 📂 FILE UPLOAD
 # =========================================
 
-uploaded = st.file_uploader("Upload your SEO data file (CSV or Excel)", type=["csv", "xlsx"])
+uploaded = st.file_uploader("📤 Upload your SEO data file (CSV or Excel)", type=["csv", "xlsx"])
 
 if uploaded:
-    # Load file
+    # Load uploaded data
     try:
         if uploaded.name.endswith(".csv"):
             df = pd.read_csv(uploaded)
@@ -126,11 +131,12 @@ if uploaded:
     st.success(f"✅ File uploaded successfully! {len(df)} rows loaded.")
     st.dataframe(df.head())
 
-    # Process button
+    # Generate Button
     if st.button("🚀 Generate Meta Titles & Descriptions"):
         st.info("Generating meta titles and descriptions...")
-        generated_titles, generated_descriptions, intents = set(), set(), [], []
-        titles, descs = [], []
+
+        # ✅ FIXED: Correct variable unpacking
+        generated_titles, generated_descriptions, intents, titles, descs = set(), set(), [], [], []
 
         for _, row in df.iterrows():
             title1 = str(row.get("Title 1", "")).strip()
@@ -157,11 +163,14 @@ if uploaded:
         df["Detected Intent"] = intents
         df["Generated Meta Title"] = titles
         df["Generated Meta Description"] = descs
+        df["Title Char Count"] = df["Generated Meta Title"].apply(len)
+        df["Description Char Count"] = df["Generated Meta Description"].apply(len)
 
         st.success("✅ Meta titles and descriptions generated successfully!")
-        st.dataframe(df.head())
+        st.markdown("### 🔍 Preview of Results")
+        st.dataframe(df[["Detected Intent", "Generated Meta Title", "Title Char Count", "Generated Meta Description", "Description Char Count"]].head(10))
 
-        # Download button
+        # Download processed file
         towrite = BytesIO()
         df.to_excel(towrite, index=False)
         towrite.seek(0)
@@ -172,5 +181,6 @@ if uploaded:
             file_name="output_with_meta.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
 else:
     st.info("👆 Upload your SEO CSV/Excel file to get started.")
