@@ -5,16 +5,16 @@ from io import BytesIO
 # =========================================
 # CONFIGURATION
 # =========================================
-# Flexible ranges to ensure completeness
-TITLE_MIN, TITLE_MAX = 50, 70
-DESC_MIN, DESC_MAX = 150, 180
+TITLE_MIN, TITLE_MAX = 50, 60
+DESC_MIN, DESC_MAX = 150, 160
 
 st.set_page_config(page_title="SEO Meta Generator", page_icon="⚙️", layout="wide")
-st.title("⚙️ Complete-First SEO Meta Generator with Tone Selection")
+st.title("⚙️ Strictly Bounded SEO Meta Generator with Tone Selection")
 st.markdown(
     """
-Generate professional **meta titles** and **meta descriptions** that are complete, readable, and adapted to your chosen tone.  
-This approach ensures the main content and keywords are never cut off.
+Generate professional meta titles (50–60 chars) and descriptions (150–160 chars)  
+that are complete, readable, and adapted to your chosen tone.  
+Primary content is always preserved, optional content is added only if it fits.
 """
 )
 
@@ -58,55 +58,55 @@ def tone_connectors(tone):
         return {"start": "Discover", "suffix": "Learn more"}
 
 # =========================================
-# TITLE GENERATION (COMPLETE-FIRST)
+# TITLE GENERATION (BOUNDED)
 # =========================================
-def generate_complete_title(title1, primary_kw, secondary_kw, tone):
+def generate_bounded_title(title1, primary_kw, secondary_kw, tone):
     connectors = tone_connectors(tone)
-    pieces = [title1, primary_kw, secondary_kw]
-    pieces = [p for p in pieces if p]
+    required = [title1, primary_kw]
+    optional = [secondary_kw]
+
+    title = f"{connectors['start']} " + " | ".join(required)
     
-    title = " | ".join(pieces)
-    title = f"{connectors['start']} {title}"
+    for opt in optional:
+        if opt and len(title + " | " + opt) <= TITLE_MAX:
+            title += " | " + opt
     
-    # Append suffix only if it fits without cutting main content
     if len(title + " " + connectors['suffix']) <= TITLE_MAX:
-        title = f"{title} {connectors['suffix']}"
+        title += " " + connectors['suffix']
     
-    # Safety: trim optional last part (suffix or secondary kw) if over max
     if len(title) > TITLE_MAX:
-        if connectors['suffix'] in title:
-            title = title.replace(" " + connectors['suffix'], "")
-        elif secondary_kw and secondary_kw in title:
-            title = title.replace(" | " + secondary_kw, "")
+        title = title[:TITLE_MAX].rsplit(" ",1)[0]
     
     return title
 
 # =========================================
-# DESCRIPTION GENERATION (COMPLETE-FIRST)
+# DESCRIPTION GENERATION (BOUNDED)
 # =========================================
-def generate_complete_description(title1, primary_kw, secondary_kw, tertiary_kw, tone):
+def generate_bounded_description(title1, primary_kw, secondary_kw, tertiary_kw, tone):
     connectors = tone_connectors(tone)
-    base = f"{title1} provides comprehensive information about {primary_kw}"
-    extras = ""
+    required = f"{title1} provides comprehensive information about {primary_kw}"
+    optional = []
     if secondary_kw:
-        extras += f", including {secondary_kw}"
+        optional.append(secondary_kw)
     if tertiary_kw:
-        extras += f" and {tertiary_kw}"
-    extras += f". {connectors['suffix']}."
+        optional.append(tertiary_kw)
     
-    desc = f"{connectors['start']} {base}{extras}"
+    desc = f"{connectors['start']} {required}"
     
-    # Optional: add filler only if below min length
-    if len(desc) < DESC_MIN:
-        filler = " More details available."
-        if len(desc + filler) <= DESC_MAX:
-            desc += filler
+    # Add optional keywords if fits
+    for kw in optional:
+        temp_desc = f"{desc}, including {kw}"
+        if len(temp_desc + f". {connectors['suffix']}.") <= DESC_MAX:
+            desc = temp_desc
     
-    # Safety: if still above max, remove suffix first
+    # Append suffix if it fits
+    suffix_text = f". {connectors['suffix']}."
+    if len(desc + suffix_text) <= DESC_MAX:
+        desc += suffix_text
+    
+    # Safety trim at last full word
     if len(desc) > DESC_MAX:
-        desc = desc.replace(f" {connectors['suffix']}.", "")
-        if len(desc) > DESC_MAX:
-            desc = desc[:DESC_MAX].rstrip()
+        desc = desc[:DESC_MAX].rsplit(" ",1)[0]
     
     return desc
 
@@ -140,8 +140,8 @@ if uploaded:
 
             intent = detect_intent(title1, existing_desc)
 
-            meta_title = generate_complete_title(title1, primary_kw, secondary_kw, tone)
-            meta_desc = generate_complete_description(title1, primary_kw, secondary_kw, tertiary_kw, tone)
+            meta_title = generate_bounded_title(title1, primary_kw, secondary_kw, tone)
+            meta_desc = generate_bounded_description(title1, primary_kw, secondary_kw, tertiary_kw, tone)
 
             generated_titles.append(meta_title)
             generated_descriptions.append(meta_desc)
@@ -182,7 +182,7 @@ if uploaded:
         st.download_button(
             label="Download Enhanced Excel File",
             data=towrite,
-            file_name="seo_meta_output_complete_first.xlsx",
+            file_name="seo_meta_output_bounded.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 else:
