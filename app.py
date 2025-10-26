@@ -9,12 +9,11 @@ TITLE_MIN, TITLE_MAX = 50, 60
 DESC_MIN, DESC_MAX = 150, 160
 
 st.set_page_config(page_title="SEO Meta Generator", page_icon="⚙️", layout="wide")
-st.title("⚙️ Strictly Bounded SEO Meta Generator with Tone Selection")
+st.title("⚙️ Prefix-Free SEO Meta Generator with Tone Selection")
 st.markdown(
     """
 Generate professional meta titles (50–60 chars) and descriptions (150–160 chars)  
-that are complete, readable, and adapted to your chosen tone.  
-Primary content is always preserved, optional content is added only if it fits.
+that start naturally with the page title and keywords, while remaining readable and complete.
 """
 )
 
@@ -43,71 +42,70 @@ def detect_intent(title, desc):
         return "generic"
 
 # =========================================
-# TONE CONNECTORS
+# TITLE GENERATION (PREFIX-FREE)
 # =========================================
-def tone_connectors(tone):
-    if tone == "Professional":
-        return {"start": "Discover", "suffix": "Learn more"}
-    elif tone == "Friendly":
-        return {"start": "Check out", "suffix": "Find out more!"}
-    elif tone == "Persuasive":
-        return {"start": "Get", "suffix": "Act now!"}
-    elif tone == "Educational":
-        return {"start": "Learn about", "suffix": "Detailed insights"}
-    else:
-        return {"start": "Discover", "suffix": "Learn more"}
-
-# =========================================
-# TITLE GENERATION (BOUNDED)
-# =========================================
-def generate_bounded_title(title1, primary_kw, secondary_kw, tone):
-    connectors = tone_connectors(tone)
+def generate_title_no_prefix(title1, primary_kw, secondary_kw, tone):
     required = [title1, primary_kw]
     optional = [secondary_kw]
 
-    title = f"{connectors['start']} " + " | ".join(required)
-    
+    title = " | ".join([p for p in required if p])
+
+    # Add optional keywords if fits
     for opt in optional:
         if opt and len(title + " | " + opt) <= TITLE_MAX:
             title += " | " + opt
-    
-    if len(title + " " + connectors['suffix']) <= TITLE_MAX:
-        title += " " + connectors['suffix']
-    
+
+    # Add tone-based suffix if fits
+    suffix_map = {
+        "Professional": "Learn more",
+        "Friendly": "Find out more!",
+        "Persuasive": "Act now!",
+        "Educational": "Detailed insights"
+    }
+    suffix = suffix_map.get(tone, "Learn more")
+    if len(title + " " + suffix) <= TITLE_MAX:
+        title += " " + suffix
+
+    # Final trim at last full word if over limit
     if len(title) > TITLE_MAX:
         title = title[:TITLE_MAX].rsplit(" ",1)[0]
-    
+
     return title
 
 # =========================================
-# DESCRIPTION GENERATION (BOUNDED)
+# DESCRIPTION GENERATION (PREFIX-FREE)
 # =========================================
-def generate_bounded_description(title1, primary_kw, secondary_kw, tertiary_kw, tone):
-    connectors = tone_connectors(tone)
-    required = f"{title1} provides comprehensive information about {primary_kw}"
+def generate_description_no_prefix(title1, primary_kw, secondary_kw, tertiary_kw, tone):
+    base = f"{title1} provides comprehensive information about {primary_kw}"
     optional = []
     if secondary_kw:
         optional.append(secondary_kw)
     if tertiary_kw:
         optional.append(tertiary_kw)
-    
-    desc = f"{connectors['start']} {required}"
-    
+
+    desc = base
+
     # Add optional keywords if fits
     for kw in optional:
         temp_desc = f"{desc}, including {kw}"
-        if len(temp_desc + f". {connectors['suffix']}.") <= DESC_MAX:
+        if len(temp_desc + 1) <= DESC_MAX:  # +1 for suffix space
             desc = temp_desc
-    
-    # Append suffix if it fits
-    suffix_text = f". {connectors['suffix']}."
-    if len(desc + suffix_text) <= DESC_MAX:
-        desc += suffix_text
-    
-    # Safety trim at last full word
+
+    # Add tone-based suffix if fits
+    suffix_map = {
+        "Professional": "Learn more.",
+        "Friendly": "Find out more!",
+        "Persuasive": "Act now!",
+        "Educational": "Detailed insights."
+    }
+    suffix = suffix_map.get(tone, "Learn more.")
+    if len(desc + " " + suffix) <= DESC_MAX:
+        desc += " " + suffix
+
+    # Final safety trim at last full word
     if len(desc) > DESC_MAX:
         desc = desc[:DESC_MAX].rsplit(" ",1)[0]
-    
+
     return desc
 
 # =========================================
@@ -140,8 +138,8 @@ if uploaded:
 
             intent = detect_intent(title1, existing_desc)
 
-            meta_title = generate_bounded_title(title1, primary_kw, secondary_kw, tone)
-            meta_desc = generate_bounded_description(title1, primary_kw, secondary_kw, tertiary_kw, tone)
+            meta_title = generate_title_no_prefix(title1, primary_kw, secondary_kw, tone)
+            meta_desc = generate_description_no_prefix(title1, primary_kw, secondary_kw, tertiary_kw, tone)
 
             generated_titles.append(meta_title)
             generated_descriptions.append(meta_desc)
@@ -182,7 +180,7 @@ if uploaded:
         st.download_button(
             label="Download Enhanced Excel File",
             data=towrite,
-            file_name="seo_meta_output_bounded.xlsx",
+            file_name="seo_meta_output_prefix_free.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 else:
