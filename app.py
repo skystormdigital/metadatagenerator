@@ -16,13 +16,12 @@ from io import BytesIO
 TITLE_MIN, TITLE_MAX = 50, 60
 DESC_MIN, DESC_MAX = 150, 160
 
-st.set_page_config(page_title="Free SEO Meta Generator", page_icon="⚙️", layout="wide")
-st.title("⚙️ SEO Meta Title & Description Generator (Free, No API)")
+st.set_page_config(page_title="SEO Meta Generator", page_icon="⚙️", layout="wide")
+st.title("⚙️ SEO Meta Title & Description Generator (Professional, No API)")
 st.markdown(
     """
-This free tool automatically generates SEO meta titles (**50–60 chars**) and descriptions (**150–160 chars**)
-based on your uploaded data.  
-It works **offline**, with **no API keys or paid services**.  
+This free tool creates **professional**, **complete** SEO meta titles (50–60 chars)  
+and descriptions (150–160 chars) based on your uploaded data — no API key required.
 """
 )
 
@@ -44,90 +43,89 @@ def detect_intent(title, desc):
         return "generic"
 
 # =========================================
-# 🧠 STRICT RANGE TRUNCATION + GENERATION
+# ✍️ NATURAL TEMPLATE-BASED GENERATION
 # =========================================
 
-def strict_length(text, min_len, max_len):
-    """Ensure text strictly fits within the character range."""
-    text = text.strip()
-    # Hard cut if over limit
-    if len(text) > max_len:
-        text = text[:max_len].rstrip(" .,!;:-")
-    # If too short, pad with generic filler words
-    while len(text) < min_len:
-        text += " more"
-        if len(text) > max_len:
-            text = text[:max_len].rstrip(" .,!;:-")
-            break
-    return text.strip()
+def within_range(text, min_len, max_len):
+    return min_len <= len(text) <= max_len
 
 def generate_title(intent, title1, primary_kw, secondary_kw):
-    t = {
+    templates = {
         "product": [
-            f"Buy {title1} – {primary_kw} at Best Price",
-            f"{title1} | {primary_kw} Features & Specs",
-            f"{primary_kw}: {title1} for You",
+            f"Buy {title1} | {primary_kw} Details & Pricing",
+            f"{primary_kw} – {title1} with Latest Features",
+            f"{title1}: Premium {primary_kw} for Every Need",
+            f"{title1} – Explore Top {primary_kw} Options"
         ],
         "service": [
-            f"{title1} – Expert {primary_kw} Services",
-            f"{primary_kw} Solutions | {title1}",
-            f"Professional {primary_kw} by {title1}",
+            f"{title1} | Professional {primary_kw} Services",
+            f"Trusted {primary_kw} Solutions – {title1}",
+            f"{title1} – Expert {primary_kw} Support",
+            f"Reliable {primary_kw} & {secondary_kw} by {title1}"
         ],
         "blog": [
-            f"{title1} – {primary_kw} Guide & Tips",
-            f"{primary_kw} Insights: {title1}",
-            f"{title1} | Learn About {primary_kw}",
+            f"{title1} – {primary_kw} Insights & Expert Tips",
+            f"{primary_kw} Guide: {title1}",
+            f"Learn {primary_kw} Strategies with {title1}",
+            f"{title1}: Explore {primary_kw} & {secondary_kw}"
         ],
         "category": [
-            f"Best {primary_kw} {title1} | Compare & Choose",
-            f"{title1} – Top {primary_kw} Options",
-            f"{primary_kw} {title1} Collection",
+            f"Best {primary_kw} {title1} – Compare Top Choices",
+            f"{title1}: Explore Leading {primary_kw} Options",
+            f"Top {primary_kw} {title1} for Smart Selection",
+            f"{primary_kw} {title1} | Discover What Fits You"
         ],
         "generic": [
-            f"{title1} | {primary_kw}",
-            f"Discover {title1} – {primary_kw}",
-            f"{primary_kw} – {title1}",
+            f"{title1} | {primary_kw} Insights & Information",
+            f"Discover {primary_kw} at {title1}",
+            f"{primary_kw} – Learn More with {title1}",
+            f"{title1}: Everything About {primary_kw}"
         ],
     }
-    title = random.choice(t.get(intent, t["generic"]))
-    title = strict_length(title, TITLE_MIN, TITLE_MAX)
-    return title
+
+    for _ in range(10):  # try multiple templates until one fits range
+        title = random.choice(templates.get(intent, templates["generic"]))
+        if within_range(title, TITLE_MIN, TITLE_MAX):
+            return title
+    return random.choice(templates.get(intent, templates["generic"]))[:TITLE_MAX]
 
 def generate_description(intent, title1, primary_kw, secondary_kw, tertiary_kw, existing_desc):
-    d = {
+    templates = {
         "product": [
-            f"Buy {title1} with {primary_kw} features. Compare {secondary_kw} and {tertiary_kw} options to find the best deal today.",
-            f"Explore {title1} – premium {primary_kw} with latest specs. Check {secondary_kw} & {tertiary_kw} for more details.",
+            f"Discover {title1}, a premium {primary_kw} offering the best in performance and value. Compare {secondary_kw} and {tertiary_kw} to find your perfect match today.",
+            f"Explore {title1}, designed for those who want the finest {primary_kw}. Compare {secondary_kw} and {tertiary_kw} for a smarter buying choice."
         ],
         "service": [
-            f"Get professional {primary_kw} with {title1}. We deliver {secondary_kw} and {tertiary_kw} solutions tailored to your needs.",
-            f"{title1} offers reliable {primary_kw} services. Our team ensures quality {secondary_kw} & {tertiary_kw} support.",
+            f"At {title1}, we provide professional {primary_kw} services that deliver real results. Our experts offer tailored {secondary_kw} and {tertiary_kw} solutions for every client.",
+            f"Experience reliable {primary_kw} solutions from {title1}. We help you with {secondary_kw} and {tertiary_kw} support designed for lasting success."
         ],
         "blog": [
-            f"Read {title1} to learn about {primary_kw}. Discover {secondary_kw} and {tertiary_kw} insights to boost your knowledge.",
-            f"{title1} – a complete {primary_kw} guide covering {secondary_kw} and {tertiary_kw} tips you can use today.",
+            f"Read {title1} to explore expert insights on {primary_kw}. Learn about {secondary_kw} and {tertiary_kw} strategies to stay informed and ahead of the competition.",
+            f"{title1} covers essential {primary_kw} knowledge with practical {secondary_kw} and {tertiary_kw} tips for professionals and learners alike."
         ],
         "category": [
-            f"Explore top {primary_kw} {title1}. Compare {secondary_kw} and {tertiary_kw} to choose the best fit for your needs.",
-            f"Discover the latest {primary_kw} {title1}. Browse {secondary_kw} and {tertiary_kw} to make the right choice.",
+            f"Browse the best {primary_kw} in {title1}. Compare {secondary_kw} and {tertiary_kw} options to find products that meet your exact requirements with ease.",
+            f"Explore {title1} – a curated range of {primary_kw}. Compare {secondary_kw} and {tertiary_kw} to discover the right fit for your needs."
         ],
         "generic": [
-            f"{title1} – your trusted source for {primary_kw}. Explore {secondary_kw} and {tertiary_kw} today.",
-            f"Find {primary_kw} information at {title1}. Learn about {secondary_kw} and {tertiary_kw}.",
+            f"{title1} provides detailed information about {primary_kw}. Explore {secondary_kw} and {tertiary_kw} insights that help you make smarter decisions.",
+            f"Learn everything about {primary_kw} with {title1}. Discover {secondary_kw} and {tertiary_kw} to expand your knowledge today."
         ],
     }
-    desc = random.choice(d.get(intent, d["generic"]))
-    desc = strict_length(desc, DESC_MIN, DESC_MAX)
-    return desc
+
+    for _ in range(10):
+        desc = random.choice(templates.get(intent, templates["generic"]))
+        if within_range(desc, DESC_MIN, DESC_MAX):
+            return desc
+    return random.choice(templates.get(intent, templates["generic"]))[:DESC_MAX]
 
 # =========================================
-# 📂 FILE UPLOAD
+# 📂 FILE UPLOAD + PROCESSING
 # =========================================
 
 uploaded = st.file_uploader("📤 Upload your SEO data file (CSV or Excel)", type=["csv", "xlsx"])
 
 if uploaded:
-    # Load uploaded data
     try:
         if uploaded.name.endswith(".csv"):
             df = pd.read_csv(uploaded)
@@ -140,9 +138,8 @@ if uploaded:
     st.success(f"✅ File uploaded successfully! {len(df)} rows loaded.")
     st.dataframe(df.head())
 
-    # Generate Button
-    if st.button("🚀 Generate Meta Titles & Descriptions"):
-        st.info("Generating meta titles and descriptions...")
+    if st.button("🚀 Generate Professional Meta Data"):
+        st.info("Generating professional meta titles and descriptions...")
 
         generated_titles, generated_descriptions, intents, titles, descs = set(), set(), [], [], []
 
@@ -174,34 +171,29 @@ if uploaded:
         df["Title Char Count"] = df["Generated Meta Title"].apply(len)
         df["Description Char Count"] = df["Generated Meta Description"].apply(len)
 
-        # =========================================
-        # 🎨 HIGHLIGHT OVER/UNDER LENGTH VALUES
-        # =========================================
-        def highlight_length(val, min_len, max_len):
+        # Highlight by length compliance
+        def color_len(val, min_len, max_len):
             if val < min_len:
-                color = "background-color: #fff3cd"  # Yellow - too short
+                return "background-color: #fff3cd"  # yellow
             elif val > max_len:
-                color = "background-color: #f8d7da"  # Red - too long
+                return "background-color: #f8d7da"  # red
             else:
-                color = "background-color: #d4edda"  # Green - perfect
-            return color
+                return "background-color: #d4edda"  # green
 
-        styled_df = df[[
+        styled = df[[
             "Detected Intent",
             "Generated Meta Title",
             "Title Char Count",
             "Generated Meta Description",
             "Description Char Count"
-        ]].style.applymap(lambda v: highlight_length(v, TITLE_MIN, TITLE_MAX) if isinstance(v, int) and v < 200 else "",
-                          subset=["Title Char Count"]) \
-          .applymap(lambda v: highlight_length(v, DESC_MIN, DESC_MAX) if isinstance(v, int) and v < 300 else "",
-                    subset=["Description Char Count"])
+        ]].style.applymap(lambda v: color_len(v, TITLE_MIN, TITLE_MAX) if isinstance(v, int) else "", subset=["Title Char Count"]) \
+         .applymap(lambda v: color_len(v, DESC_MIN, DESC_MAX) if isinstance(v, int) else "", subset=["Description Char Count"])
 
         st.success("✅ Meta titles and descriptions generated successfully!")
-        st.markdown("### 🔍 Preview of Results (Color-coded by length)")
-        st.dataframe(styled_df, use_container_width=True)
+        st.markdown("### 🔍 Preview (Color-coded by Length)")
+        st.dataframe(styled, use_container_width=True)
 
-        # Download processed file
+        # Download output
         towrite = BytesIO()
         df.to_excel(towrite, index=False)
         towrite.seek(0)
