@@ -42,45 +42,49 @@ def detect_intent(title, desc):
         return "generic"
 
 # =========================================
-# TONE-BASED CONNECTORS
+# TONE CONNECTORS
 # =========================================
 def tone_connectors(tone):
     if tone == "Professional":
-        return {"start": "Discover", "join": "|", "suffix": "Learn More"}
+        return {"start": "Discover", "suffix": "Learn more"}
     elif tone == "Friendly":
-        return {"start": "Check out", "join": "-", "suffix": "Find out more!"}
+        return {"start": "Check out", "suffix": "Find out more!"}
     elif tone == "Persuasive":
-        return {"start": "Get", "join": "|", "suffix": "Act Now!"}
+        return {"start": "Get", "suffix": "Act now!"}
     elif tone == "Educational":
-        return {"start": "Learn about", "join": "-", "suffix": "Detailed Insights"}
+        return {"start": "Learn about", "suffix": "Detailed insights"}
     else:
-        return {"start": "Discover", "join": "|", "suffix": "Learn More"}
+        return {"start": "Discover", "suffix": "Learn more"}
 
 # =========================================
-# COMPLETE TITLE GENERATION
+# TITLE GENERATION
 # =========================================
 def generate_title_with_tone(title1, primary_kw, secondary_kw, tone):
     connectors = tone_connectors(tone)
-    pieces = [f"{connectors['start']} {title1}", primary_kw, secondary_kw]
-    title = ""
-    for p in pieces:
-        if not p:
-            continue
-        if len(title + " " + p) <= TITLE_MAX:
-            title = (title + " " + p).strip()
-        else:
-            break
-    # Ensure minimum length
-    while len(title) < TITLE_MIN:
-        suffix = f" {connectors['suffix']}"
-        if len(title + suffix) <= TITLE_MAX:
-            title += suffix
-        else:
-            break
+    pieces = [title1, primary_kw, secondary_kw]
+    pieces = [p for p in pieces if p]
+    
+    # Join keywords naturally
+    title = " | ".join(pieces)
+    
+    # Prepend start phrase if it fits
+    start_phrase = connectors['start']
+    if len(start_phrase + " " + title) <= TITLE_MAX:
+        title = start_phrase + " " + title
+
+    # Add suffix once if still below minimum
+    suffix = connectors['suffix']
+    if len(title) < TITLE_MIN and len(title + " " + suffix) <= TITLE_MAX:
+        title = title + " " + suffix
+
+    # Safety cut if needed
+    if len(title) > TITLE_MAX:
+        title = title[:TITLE_MAX].rstrip()
+
     return title
 
 # =========================================
-# COMPLETE DESCRIPTION GENERATION
+# DESCRIPTION GENERATION
 # =========================================
 def generate_description_with_tone(title1, primary_kw, secondary_kw, tertiary_kw, tone):
     connectors = tone_connectors(tone)
@@ -91,17 +95,19 @@ def generate_description_with_tone(title1, primary_kw, secondary_kw, tertiary_kw
     if tertiary_kw:
         extras += f" and {tertiary_kw}"
     extras += f". {connectors['suffix']}."
+    
     desc = f"{connectors['start']} {base}{extras}"
-    # Ensure min length
-    while len(desc) < DESC_MIN:
+
+    # Ensure minimum length
+    if len(desc) < DESC_MIN:
         extra_suffix = " More details available."
         if len(desc + extra_suffix) <= DESC_MAX:
             desc += extra_suffix
-        else:
-            break
+
     # Final safety cut
     if len(desc) > DESC_MAX:
         desc = desc[:DESC_MAX].rstrip()
+
     return desc
 
 # =========================================
